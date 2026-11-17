@@ -31,8 +31,11 @@ import {
   createSyncCode,
   disconnectSync,
   formatSyncCode,
+  openSyncConflict,
   pullFromCloud,
   pushToCloud,
+  setAutoSync,
+  takeOverSync,
   useSync,
 } from '../../services/sync.js'
 import {
@@ -677,10 +680,21 @@ const SyncSection = () => {
   const busy = useSync((state) => state.busy)
   const lastSyncAt = useSync((state) => state.lastSyncAt)
   const error = useSync((state) => state.error)
+  const errorDetail = useSync((state) => state.errorDetail)
+  const auto = useSync((state) => state.auto)
+  const conflict = useSync((state) => state.conflict)
+  const pending = useSync((state) => state.pending)
+  const lease = useSync((state) => state.lease)
+  const takenOver = useSync((state) => state.takenOver)
   const [input, setInput] = useState('')
   const [confirm, setConfirm] = useState<'push' | 'pull' | null>(null)
 
-  const status: Status = error ? { key: error, error: true } : null
+  // 服务端错误原文优先展示，方便直接看出是权限、请求过大还是网络问题
+  const status: Status = error
+    ? errorDetail
+      ? { key: 'syncFailedWithDetail', params: { detail: errorDetail }, error: true }
+      : { key: error, error: true }
+    : null
 
   const copyCode = async (value: string) => {
     try {
@@ -750,7 +764,7 @@ const SyncSection = () => {
     <>
       <SettingCell
         label={t('syncTitle')}
-        description={`${formatSyncCode(code)} · ${whenText}`}
+        description={`${formatSyncCode(code)} · ${whenText}${pending ? ` · ${t('syncPending')}` : ''}`}
         status={status}
         className={styles.syncCell}
         action={
@@ -789,6 +803,57 @@ const SyncSection = () => {
           </div>
         }
       />
+      <SettingCell
+        label={t('syncAuto')}
+        description={t('syncAutoDescription')}
+        status={conflict ? { key: 'syncConflict', error: true } : null}
+        action={
+          <div className={styles.syncForm}>
+            {conflict ? (
+              <Button variant="outlined" size="m" onClick={openSyncConflict}>
+                {t('syncConflictResolve')}
+              </Button>
+            ) : null}
+            <Button
+              variant="outlined"
+              size="m"
+              className={styles.cellButton}
+              disabled={busy !== null}
+              onClick={() => setAutoSync(!auto)}
+            >
+              {t(auto ? 'syncAutoOn' : 'syncAutoOff')}
+            </Button>
+          </div>
+        }
+      />
+      {connected ? (
+        <SettingCell
+          label={t('syncDevice')}
+          description={t('syncLeaseSelf')}
+          status={
+            takenOver
+              ? {
+                  key: 'syncLeaseOther',
+                  params: { device: lease?.deviceName || t('startupOccupiedUnknownDevice') },
+                  error: true,
+                }
+              : null
+          }
+          action={
+            takenOver ? (
+              <Button
+                variant="outlined"
+                size="m"
+                className={styles.cellButton}
+                disabled={busy !== null}
+                onClick={() => void takeOverSync()}
+              >
+                {t('syncLeaseTakeOver')}
+              </Button>
+            ) : null
+          }
+        />
+      ) : null}
       {confirm ? (
         <Modal
           title={t(confirm === 'push' ? 'syncPushConfirmTitle' : 'syncPullConfirmTitle')}

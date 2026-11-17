@@ -23,6 +23,8 @@ import { onUploadNotice } from '../services/attachments.js'
 import { Button } from '../components/base/Button.js'
 import { stopReadAloud } from '../services/speech/readAloud.js'
 import { ensurePersistentStorage } from '../services/storage.js'
+import { flushAutoSync, syncNow, checkStartupSync } from '../services/sync.js'
+import { StartupSync } from '../components/startup/StartupSync.js'
 import { CollapsedSider } from '../components/sider/CollapsedSider.js'
 import { closeMobileSider } from '../components/sider/mobileSiderState.js'
 import { MobileSider, Sider } from '../components/sider/Sider.js'
@@ -69,10 +71,32 @@ export const App = () => {
   // 移动端选中会话、切换布局后收起抽屉
   useEffect(closeMobileSider, [activeId, isMobile])
 
+  // 云同步：改动由会话层主动触发；这里只管离开前的最后一把、回到前台与定时检查
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        // 切后台或关闭前立即同步一次，尽量缩短“改动后马上退出”的丢失窗口
+        flushAutoSync()
+      } else {
+        void syncNow()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', flushAutoSync)
+    const interval = window.setInterval(() => void syncNow(), 5 * 60 * 1000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', flushAutoSync)
+      window.clearInterval(interval)
+    }
+  }, [])
+
   useEffect(() => {
     void initChat()
     // 申请持久化存储，避免浏览器在磁盘紧张时清理本地会话
     void ensurePersistentStorage()
+    // 启动检查：过渡动画期间比较云端与本地记录
+    void checkStartupSync()
     // 没有 API Key 时先引导获取；填写成功后再提示数据存储位置
     if (!useSettings.getState().apiKey) {
       openOnboarding('ask')
@@ -151,6 +175,7 @@ export const App = () => {
       </div>
       <SettingsDialog />
       <OnboardingDialog />
+      <StartupSync />
       <Toast />
     </>
   )

@@ -2,8 +2,8 @@ import { useTranslate } from '../../i18n/index.js'
 import clsx from 'clsx'
 import { memo, useLayoutEffect, useRef, useState } from 'react'
 import { useIsMobile } from '../../app/viewport.js'
-import { IconEditOutline16 } from '../base/icons.js'
-import { editMessage, retryUpload } from '../../services/chat/store.js'
+import { IconEditOutline16, IconRefreshOutline16 } from '../base/icons.js'
+import { editMessage, replyToUser, retryUpload } from '../../services/chat/store.js'
 import { stopReadAloud } from '../../services/speech/readAloud.js'
 import type { UserMessage as UserMessageType } from '../../services/chat/types.js'
 import { Button } from '../base/Button.js'
@@ -24,6 +24,7 @@ export const UserMessage = memo(function UserMessage({
   retryUploadId,
   isFirst,
   isLast,
+  unanswered,
   busy,
   versions,
   onSelectVersion,
@@ -34,6 +35,8 @@ export const UserMessage = memo(function UserMessage({
   retryUploadId: string | null
   isFirst: boolean
   isLast: boolean
+  /** 这条提问下没有回答（中途退出时未完成的回答已被丢弃） */
+  unanswered: boolean
   busy: boolean
   versions: MessageVersions
   onSelectVersion: SelectMessageVersion
@@ -114,6 +117,20 @@ export const UserMessage = memo(function UserMessage({
         <>
           {message.content ? <div className={styles.bubble}>{message.content}</div> : null}
           <div className={styles.bottom}>
+            {unanswered ? (
+              <IconButton
+                icon={<IconRefreshOutline16 />}
+                tooltip={t('regenerate')}
+                tooltipPlacement="bottom"
+                disabled={busy}
+                onClick={() => {
+                  if (ensureApiKey()) {
+                    stopReadAloud()
+                    replyToUser(sessionId, message.id)
+                  }
+                }}
+              />
+            ) : null}
             <div className={clsx(styles.actions, isLast && styles.alwaysShow)}>
               {message.content ? <CopyButton text={message.content} /> : null}
               <IconButton

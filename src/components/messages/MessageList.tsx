@@ -141,6 +141,9 @@ export const MessageList = ({
 
   const lastIndex = messages.length - 1
   const uploadRetryId = getUploadRetryId(messages, streaming)
+  // 只有位于末尾的提问会缺回答：中途退出时未完成的回答已丢弃，直接从这条重来
+  const lastMessage = messages.at(-1)
+  const unansweredId = !streaming && lastMessage?.role === 'user' ? lastMessage.id : null
   return (
     <ScrollToBottomContext.Provider value={scrollToBottom}>
       <div ref={isMobile ? undefined : scrollRef} className={styles.container}>
@@ -155,6 +158,7 @@ export const MessageList = ({
                   retryUploadId={uploadRetryId}
                   isFirst={index === 0}
                   isLast={index === lastIndex || index === lastIndex - 1}
+                  unanswered={message.id === unansweredId}
                   busy={streaming}
                   versions={versions.get(message.id) ?? EMPTY_VERSIONS}
                   onSelectVersion={selectVersion}

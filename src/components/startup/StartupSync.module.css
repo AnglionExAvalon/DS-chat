@@ -1,0 +1,38 @@
+/* 启动检查期间用实色遮罩覆盖界面，避免看到尚未就绪的内容 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dsw-alias-bg-base);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--dsw-alias-border-l2);
+  border-top-color: var(--dsw-alias-brand-text);
+  animation: spin 0.8s linear infinite;
+}
+
+.text {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

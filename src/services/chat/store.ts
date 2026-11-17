@@ -15,6 +15,8 @@ import {
   prepareDraftMessage,
 } from './drafts.js'
 import { createLatestReminder } from './latestReminder.js'
+import { markSessionDeleted } from '../sync/state.js'
+import { requestSync } from '../sync/trigger.js'
 import {
   applyEvent,
   canContinueReply,
@@ -269,22 +271,32 @@ const createReply = (): AssistantMessage => {
   }
 }
 
-/** 仍在生成中的回复（页面关闭或导出时未结束）按「已停止」处理 */
-const settleInterrupted = (session: Session): Session => {
-  if (
-    !session.messages.some(
-      (m) => m.role === 'assistant' && (m.status === 'pending' || m.status === 'streaming')
-    )
-  ) {
+/**
+ * 丢弃未完成的回答：流式中途关闭页面时 IndexedDB 里会留下 pending / streaming 的消息，
+ * 下次打开既无法继续也无法作为上下文，按约定直接丢弃，由用户决定是否重新生成。
+ */
+const dropUnfinished = (session: Session): Session => {
+  const dropped = new Set(
+    session.messages
+      .filter(
+        (message) =>
+          message.role === 'assistant' &&
+          (message.status === 'pending' || message.status === 'streaming')
+      )
+      .map((message) => message.id)
+  )
+  if (dropped.size === 0) {
     return session
   }
   return {
     ...session,
-    messages: session.messages.map((m) =>
-      m.role === 'assistant' && (m.status === 'pending' || m.status === 'streaming')
-        ? settleReply(m, 'stopped', session.updatedAt)
-        : m
-    ),
+    messages: session.messages
+      .filter((message) => !dropped.has(message.id))
+      .map((message) =>
+        message.selectedChildId && dropped.has(message.selectedChildId)
+          ? { ...message, selectedChildId: undefined }
+          : message
+      ),
   }
 }
 
@@ -343,7 +355,7 @@ const ensureSessionLoaded = (id: string): Promise<void> => {
       if (!stored) {
         throw new Error(`Session ${id} is missing from local storage`)
       }
-      const settled = settleInterrupted(normalizeSession(stored))
+      const settled = dropUnfinished(normalizeSession(stored))
       // 读取期间可能已在列表重命名，保留最新元数据，不能让旧读取覆盖它。
       const session = sameSummary(settled, summary) ? settled : { ...settled, ...summary }
       touchSession(id)
@@ -386,6 +398,101 @@ const waitForIdle = (sessionId?: string) =>
   })
 
 /**
+ * 同步层把云端较新的会话写回本地：先落盘，再刷新列表元数据。
+ * 正在生成或正在删除的会话一律跳过并回报给调用方，让同步进度保持旧值，下一轮再对齐。
+ * 返回未被应用的会话 id。
+ */
+export const applyRemoteSessions = async (
+  updates: Session[],
+  removals: string[]
+): Promise<string[]> => {
+  const epoch = historyEpoch
+  const blocked = (id: string) =>
+    deletingSessions.has(id) || getStreamController(id) !== undefined
+  const applied: Session[] = []
+  const removed: string[] = []
+  const skipped = new Set<string>()
+  for (const session of updates) {
+    if (blocked(session.id)) {
+      skipped.add(session.id)
+    } else {
+      applied.push(session)
+    }
+  }
+  for (const id of removals) {
+    if (blocked(id)) {
+      skipped.add(id)
+    } else {
+      removed.push(id)
+    }
+  }
+  if (applied.length === 0 && removed.length === 0) {
+    return [...skipped]
+  }
+  try {
+    for (const session of applied) {
+      await db.saveSession(session)
+    }
+    for (const id of removed) {
+      await db.deleteSession(id)
+    }
+  } catch (error) {
+    db.reportStorageError('write cloud sessions')(error)
+    // 没写成就不能记同步进度，否则这份内容再也不会重试
+    for (const session of applied) {
+      skipped.add(session.id)
+    }
+    for (const id of removed) {
+      skipped.add(id)
+    }
+    return [...skipped]
+  }
+  if (epoch !== historyEpoch) {
+    return [...skipped]
+  }
+  const gone = new Set(removed)
+  const incoming = new Map(applied.map((session) => [session.id, session]))
+  for (const id of gone) {
+    sessionAccess.delete(id)
+    unsavedSessions.delete(id)
+    sessionLoads.delete(id)
+  }
+  set((state) => {
+    const cache = Object.fromEntries(
+      Object.entries(state.sessionCache).filter(([id]) => !gone.has(id))
+    )
+    for (const [id, session] of incoming) {
+      // 只替换已加载的详情，没打开过的下次打开时从库里读
+      if (Object.hasOwn(cache, id)) {
+        cache[id] = session
+      }
+    }
+    const summaries = state.sessions.filter((summary) => !gone.has(summary.id))
+    for (const session of applied) {
+      const next = toSessionSummary(session)
+      const index = summaries.findIndex((summary) => summary.id === session.id)
+      if (index === -1) {
+        summaries.push(next)
+      } else {
+        summaries[index] = next
+      }
+    }
+    return {
+      sessions: sortSessions(summaries),
+      sessionCache: cache,
+      activeId: state.activeId !== null && gone.has(state.activeId) ? null : state.activeId,
+      sessionLoadErrors: Object.fromEntries(
+        Object.entries(state.sessionLoadErrors).filter(([id]) => !gone.has(id))
+      ),
+      sessionSaveErrors: Object.fromEntries(
+        Object.entries(state.sessionSaveErrors).filter(([id]) => !gone.has(id))
+      ),
+    }
+  })
+  return [...skipped]
+}
+
+/**
  * 替换历史对话：先写入暂存，成功后原子替换旧记录；写入为空即删除全部会话与附件。
  * 期间停止生成并禁止修改会话；失败时清除暂存，保留原有记录。
  */
@@ -394,6 +501,8 @@ export const replaceHistory = async (write: () => Promise<void>): Promise<number
     throw new Error('History replacement is already in progress')
   }
   set({ importingHistory: true })
+  // 替换前存在的会话，替换后不在列表里的要留墓碑，否则云端会把它们又推回来
+  const previousIds = get().sessions.map((session) => session.id)
   try {
     for (const controller of Object.values(get().streaming)) {
       controller.abort()
@@ -417,6 +526,12 @@ export const replaceHistory = async (write: () => Promise<void>): Promise<number
     unsavedSessions.clear()
     pendingFiles.clear()
     clearAllDrafts()
+    const kept = new Set(summaries.map((session) => session.id))
+    for (const id of previousIds) {
+      if (!kept.has(id)) {
+        markSessionDeleted(id)
+      }
+    }
     set({
       ready: true,
       initError: false,
@@ -426,6 +541,7 @@ export const replaceHistory = async (write: () => Promise<void>): Promise<number
       sessionSaveErrors: {},
       activeId: null,
     })
+    requestSync()
     return summaries.length
   } finally {
     set({ importingHistory: false })
@@ -467,6 +583,7 @@ export const renameSession = (id: string, title: string) => {
   if (getSession(id)) {
     updateSession(id, (session) => ({ ...session, title }))
     persist(id)
+    requestSync()
   } else {
     set((state) => ({
       sessions: state.sessions.map((session) =>
@@ -504,6 +621,7 @@ const removeSessionData = async (id: string): Promise<boolean> => {
     if (epoch !== historyEpoch) {
       return true
     }
+    markSessionDeleted(id)
     sessionLoads.delete(id)
     sessionAccess.delete(id)
     unsavedSessions.delete(id)
@@ -522,6 +640,7 @@ const removeSessionData = async (id: string): Promise<boolean> => {
       ),
       activeId: state.activeId === id ? null : state.activeId,
     }))
+    requestSync()
     return true
   } catch (error) {
     db.reportStorageError('delete session')(error)
@@ -611,6 +730,8 @@ export const sendMessage = (targetSessionId: string | null) => {
   }
   persist(sessionId)
   clearSentDraft(targetSessionId)
+  // 提问立刻上云：快照会剔除尚未完成的回答，中途退出也不会丢这句话
+  requestSync({ immediate: true })
   void streamReply(sessionId, reply, { history, question })
   return true
 }
@@ -639,6 +760,35 @@ export const regenerateReply = (sessionId: string, messageId?: string) => {
   }))
   persist(sessionId)
   void streamReply(sessionId, reply, { history, question })
+}
+
+/**
+ * 给没有回答的提问补一次回复。
+ * 中途退出时未完成的回答会被丢弃，用户消息还在，这个入口让它重新开始。
+ */
+export const replyToUser = (sessionId: string, messageId: string) => {
+  if (get().importingHistory || deletingSessions.has(sessionId)) {
+    return
+  }
+  const session = getSession(sessionId)
+  if (!session || getStreamController(sessionId)) {
+    return
+  }
+  const path = getVisibleMessages(session)
+  const index = path.findIndex((message) => message.id === messageId)
+  const question = path[index]
+  // 只处理分支末端的提问：已有回答的走“重新生成”，避免凭空多出一条分支
+  if (question?.role !== 'user' || path[index + 1] !== undefined) {
+    return
+  }
+  const reply = createReply()
+  updateSession(sessionId, (s) => ({
+    ...appendBranch(s, question.id, [reply]),
+    updatedAt: Date.now(),
+  }))
+  persist(sessionId)
+  requestSync({ immediate: true })
+  void streamReply(sessionId, reply, { history: path.slice(0, index), question })
 }
 
 /** 编辑提问后新增同父版本，保留原文件；旧问题的所有回答与后续对话仍可切回。 */
@@ -670,6 +820,7 @@ export const editMessage = (sessionId: string, messageId: string, content: strin
     updatedAt: Date.now(),
   }))
   persist(sessionId)
+  requestSync()
   void streamReply(sessionId, reply, { history: path.slice(0, index), question })
   return true
 }
@@ -683,6 +834,7 @@ export const selectMessageVersion = (sessionId: string, messageId: string) => {
   }
   updateSession(sessionId, (session) => selectVersion(session, messageId))
   persist(sessionId)
+  requestSync()
 }
 
 /** 继续最后一条未完成的回答：保留原消息与开关，仅将新流的内容追加到原块之后。 */
@@ -1084,11 +1236,14 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
     streamFlushes.delete(sessionId)
     cancelAnimationFrame(frame)
     updateReply(sessionId, reply)
+    // 流式期间的增量不改 updatedAt，收尾时补一次，同步层才知道这个会话有了新版本
+    updateSession(sessionId, (session) => ({ ...session, updatedAt: Date.now() }))
     set((state) => ({
       streaming: Object.fromEntries(
         Object.entries(state.streaming).filter(([id]) => id !== sessionId)
       ),
     }))
     persist(sessionId)
+    requestSync()
   }
 }
