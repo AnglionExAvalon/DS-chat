@@ -1,4 +1,5 @@
 import { formatDate } from '../../utils/format.js'
+import { markExported } from '../storage.js'
 import * as db from './db.js'
 import { replaceHistory, useChatStore } from './store.js'
 import type { Session } from './types.js'
@@ -36,6 +37,8 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
     const { exportArchive } = await import('./history/exportArchive.js')
     const now = new Date()
     const blob = await exportArchive(readSessions())
+    // 记录备份时间，设置页据此提示导出情况
+    markExported(now.getTime())
     return { name: backupFileName(now), blob }
   })
 

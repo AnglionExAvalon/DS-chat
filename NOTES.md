@@ -90,3 +90,22 @@ git switch main                # 切回主线
 | 想部署到 Pages | `Settings → General → Danger Zone → Change to public`，再到 `Settings → Pages` 把 Source 选为 GitHub Actions，然后重跑 workflow；站点地址为 `https://anglionexavalon.github.io/DS-chat/` |
 
 改公开前需确认：代码、提交历史、本文件都会公开可见（仓库内不含 API Key，Key 只保存在浏览器 localStorage）。
+
+## PWA 与安装包
+
+已实现 PWA，站点可装到桌面 / 主屏并以独立窗口运行：
+
+- `src/manifest.webmanifest`：应用名、`display: standalone`、主题色、图标
+- `src/sw.js`：网络优先、失败回退缓存；推送新版本刷新即生效，不会卡在旧版本
+- `src/assets/icons/`：192 / 512 / maskable 512 与 iOS 的 180 图标
+- `src/index.html`：manifest、`apple-touch-icon` 与 `apple-mobile-web-app-*` meta
+- `src/main.tsx`：仅在生产构建注册 Service Worker，避免开发服务器被缓存干扰
+- `rspack.config.ts`：CopyRspackPlugin 把上述文件复制到产物根目录，图标落在 `icons/`
+
+注意：删除桌面/主屏图标通常不会丢数据，清除应用数据才会；设置 → 数据管理里会显示持久化状态、存储用量与上次导出时间。
+
+Android 安装包（APK）尚未实现。计划用 Capacitor 包装现有 `dist/`，由 GitHub Actions 构建并挂到 Release 供下载；需注意 APK 内页面 origin 不同，可能要改用 `CapacitorHttp` 绕开 CORS。iOS 的 IPA 需要 Apple 开发者账号，暂不做。
+
+## 跨设备同步
+
+当前没有云同步：数据按 origin 存在各自设备，换设备需要“导出 ZIP → 新设备导入”（导入会覆盖本地全部会话）。要做真正的多设备同步必须引入后端（例如 Cloudflare Workers + D1、Supabase），并建议聊天记录加密后上传、API Key 始终只留在本地。

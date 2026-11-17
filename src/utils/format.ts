@@ -55,3 +55,19 @@ export const formatClock = (value: number): string => {
     .map((part) => pad(part))
     .join(':')
 }
+
+/** 字节数按 B/KB/MB/GB 展示，超过 100 时取整 */
+export const formatBytes = (value: number): string => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return '0 B'
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let size = value
+  let unit = 0
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024
+    unit += 1
+  }
+  const text = unit === 0 || size >= 100 ? size.toFixed(0) : size.toFixed(1)
+  return `${text} ${units[unit]}`
+}

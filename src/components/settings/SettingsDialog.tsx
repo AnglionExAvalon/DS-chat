@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   IconDarkOutline16,
   IconDataOutline16,
@@ -19,6 +19,22 @@ import { useIsMobile } from '../../app/viewport.js'
 import { useChatStore } from '../../services/chat/store.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
 import {
+  ensurePersistentStorage,
+  readLastExport,
+  readStorageStatus,
+  type StorageStatus,
+} from '../../services/storage.js'
+import {
+  clearSyncError,
+  connectSync,
+  createSyncCode,
+  disconnectSync,
+  formatSyncCode,
+  pullFromCloud,
+  pushToCloud,
+  useSync,
+} from '../../services/sync.js'
+import {
   isChineseBrowser,
   setLocale,
   setLocation,
@@ -28,6 +44,7 @@ import {
   type ThemePreference,
 } from '../../services/settings.js'
 import { useTranslate, type TranslationKey, type TranslationMessage } from '../../i18n/index.js'
+import { formatBytes } from '../../utils/format.js'
 import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
@@ -106,6 +123,8 @@ const SettingsContent = () => {
               <ApiKeyField editor={apiKeyEditor} />
               <ImportHistory historyImport={historyImport} disabled={historyBusy} />
               <ExportHistory disabled={historyBusy} />
+              <StorageStatusCell />
+              <SyncSection />
               <SettingCell
                 label={t('deleteAllSessions')}
                 status={null}
@@ -512,12 +531,28 @@ const ImportHistory = ({
   )
 }
 
+/** 上次导出的相对时间文案；没有记录时提示尚未导出 */
+const exportedWhen = (t: ReturnType<typeof useTranslate>, time: number | null): string => {
+  if (time === null) {
+    return t('lastExportNever')
+  }
+  const days = Math.floor((Date.now() - time) / 86_400_000)
+  const when =
+    days <= 0
+      ? t('relativeToday')
+      : days === 1
+        ? t('relativeYesterday')
+        : t('relativeDaysAgo', { count: days })
+  return t('lastExport', { when })
+}
+
 /** 将全部会话及图片导出为 ZIP 文件并下载 */
 const ExportHistory = ({ disabled }: { disabled: boolean }) => {
   const t = useTranslate()
   const empty = useChatStore((state) => state.sessions.length === 0)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<Status>(null)
+  const [lastExport, setLastExport] = useState(() => readLastExport())
 
   const onExport = async () => {
     setBusy(true)
@@ -530,6 +565,7 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
       link.download = name
       link.click()
       setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      setLastExport(Date.now())
     } catch (error) {
       setStatus(errorStatus('historyExportFailed', error))
     } finally {
@@ -540,7 +576,7 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
   return (
     <SettingCell
       label={t('exportAllLabel')}
-      description={t('historyExportDescription')}
+      description={`${t('historyExportDescription')} · ${exportedWhen(t, lastExport)}`}
       status={status}
       action={
         <Button
@@ -555,5 +591,225 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
         </Button>
       }
     />
+  )
+}
+
+/** 本地存储：持久化状态、已用空间，未获得持久化时可手动申请 */
+const StorageStatusCell = () => {
+  const t = useTranslate()
+  const [storage, setStorage] = useState<StorageStatus | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const refresh = useCallback(async () => {
+    setStorage(await readStorageStatus())
+  }, [])
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  const request = async () => {
+    setBusy(true)
+    try {
+      const granted = await ensurePersistentStorage()
+      await refresh()
+      showToast(
+        granted
+          ? { key: 'storageRequested' }
+          : { key: 'storageRequestFailed', type: 'error' }
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (storage === null) {
+    return (
+      <SettingCell
+        label={t('storageTitle')}
+        status={null}
+        description={t('storageChecking')}
+        action={null}
+      />
+    )
+  }
+
+  // persisted 为 null 表示浏览器没有 StorageManager，无法申请
+  const supported = storage.persisted !== null
+  const description = !supported
+    ? t('storageUnsupported')
+    : storage.persisted
+      ? `${t('storagePersisted')} · ${t('storageUsage', {
+          usage: formatBytes(storage.usage),
+          quota: formatBytes(storage.quota),
+        })}`
+      : t('storageNotPersisted')
+
+  return (
+    <SettingCell
+      label={t('storageTitle')}
+      status={null}
+      description={description}
+      action={
+        supported && !storage.persisted ? (
+          <Button
+            variant="outlined"
+            size="m"
+            className={styles.cellButton}
+            disabled={busy}
+            onClick={() => void request()}
+          >
+            {t('storageRequest')}
+          </Button>
+        ) : null
+      }
+    />
+  )
+}
+
+/** 云同步：生成/输入同步码；已连接时提供上传、恢复与断开 */
+const SyncSection = () => {
+  const t = useTranslate()
+  const code = useSync((state) => state.code)
+  const connected = useSync((state) => state.connected)
+  const busy = useSync((state) => state.busy)
+  const lastSyncAt = useSync((state) => state.lastSyncAt)
+  const error = useSync((state) => state.error)
+  const [input, setInput] = useState('')
+  const [confirm, setConfirm] = useState<'push' | 'pull' | null>(null)
+
+  const status: Status = error ? { key: error, error: true } : null
+
+  const copyCode = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value)
+      showToast({ key: 'syncCopied' })
+    } catch {
+      showToast({ key: 'copyFailed', type: 'error' })
+    }
+  }
+
+  const generate = () => {
+    setInput(formatSyncCode(createSyncCode()))
+    clearSyncError()
+  }
+
+  const run = async (action: 'push' | 'pull') => {
+    setConfirm(null)
+    try {
+      const count = action === 'push' ? await pushToCloud() : await pullFromCloud()
+      showToast({ key: action === 'push' ? 'syncUploaded' : 'syncPulled', params: { count } })
+    } catch {
+      // 失败原因已写入 store，由 status 展示
+    }
+  }
+
+  if (!code) {
+    return (
+      <SettingCell
+        label={t('syncTitle')}
+        description={t('syncDescription')}
+        status={status}
+        className={styles.syncCell}
+        action={
+          <div className={styles.syncForm}>
+            <input
+              className={styles.syncInput}
+              value={input}
+              placeholder={t('syncCodePlaceholder')}
+              spellCheck={false}
+              onChange={(event) => {
+                setInput(event.target.value)
+                clearSyncError()
+              }}
+            />
+            <Button variant="outlined" size="m" onClick={generate}>
+              {t('syncGenerate')}
+            </Button>
+            <Button
+              size="m"
+              disabled={busy !== null || input.trim().length < 8}
+              onClick={() => void connectSync(input)}
+            >
+              {t('syncConnect')}
+            </Button>
+          </div>
+        }
+      />
+    )
+  }
+
+  const whenText =
+    lastSyncAt === null
+      ? t('syncConnectedNever')
+      : t('syncConnectedAt', { when: exportedWhen(t, lastSyncAt) })
+
+  return (
+    <>
+      <SettingCell
+        label={t('syncTitle')}
+        description={`${formatSyncCode(code)} · ${whenText}`}
+        status={status}
+        className={styles.syncCell}
+        action={
+          <div className={styles.syncForm}>
+            <Button
+              variant="outlined"
+              size="m"
+              disabled={busy !== null}
+              onClick={() => void copyCode(formatSyncCode(code))}
+            >
+              {t('copy')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="m"
+              disabled={busy !== null || !connected}
+              onClick={() => setConfirm('push')}
+            >
+              {t('syncPush')}
+            </Button>
+            <Button
+              size="m"
+              disabled={busy !== null || !connected}
+              onClick={() => setConfirm('pull')}
+            >
+              {t('syncPull')}
+            </Button>
+            <Button
+              variant="dangerOutlined"
+              size="m"
+              disabled={busy !== null}
+              onClick={() => disconnectSync()}
+            >
+              {t('syncDisconnect')}
+            </Button>
+          </div>
+        }
+      />
+      {confirm ? (
+        <Modal
+          title={t(confirm === 'push' ? 'syncPushConfirmTitle' : 'syncPullConfirmTitle')}
+          className={styles.importConfirm}
+          onClose={() => setConfirm(null)}
+          footer={
+            <>
+              <Button variant="outlined" size="m" onClick={() => setConfirm(null)}>
+                {t('cancel')}
+              </Button>
+              <Button
+                variant={confirm === 'pull' ? 'danger' : 'primary'}
+                size="m"
+                onClick={() => void run(confirm)}
+              >
+                {t('syncConfirm')}
+              </Button>
+            </>
+          }
+        >
+          {t(confirm === 'push' ? 'syncPushConfirmBody' : 'syncPullConfirmBody')}
+        </Modal>
+      ) : null}
+    </>
   )
 }

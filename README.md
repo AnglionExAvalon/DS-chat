@@ -28,13 +28,23 @@ Enter a DeepSeek API key in Settings before the first chat; the key is stored in
 
 Pushes to `main` are built and published by GitHub Actions.
 
+## Install as an app (PWA)
+
+The site is installable, so it opens in its own window without browser chrome:
+
+- **Android (Chrome)**: open the site → menu → “Install app”
+- **iOS (Safari)**: open the site → Share → “Add to Home Screen”
+- **Desktop (Chrome / Edge)**: the install icon in the address bar
+
+Data still lives on the device only. Removing the icon usually keeps the data; clearing app data deletes it, so export a backup from Settings regularly (Settings → Data shows the last export time and storage usage).
+
 ## Build
 
 ```powershell
 pnpm build
 ```
 
-Output goes to `dist/`. Open `dist/index.html` directly or deploy it to any static host.
+Output in `dist/` includes `index.html`, `static/`, `manifest.webmanifest`, `sw.js` and `icons/`. Open `dist/index.html` directly or deploy it to any static host.
 
 ## Differences from upstream
 

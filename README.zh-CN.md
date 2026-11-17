@@ -28,13 +28,23 @@ pnpm dev
 
 推送到 `main` 后由 GitHub Actions 自动构建并发布。
 
+## 安装成 App（PWA）
+
+站点支持 PWA，可以像 App 一样装到桌面或主屏幕，打开后没有浏览器地址栏：
+
+- **Android（Chrome）**：打开站点 → 右上角菜单 → “安装应用”
+- **iOS（Safari）**：打开站点 → 分享 → “添加到主屏幕”
+- **桌面（Chrome / Edge）**：地址栏右侧的“安装”图标
+
+安装后数据仍只保存在本机；删除图标一般不会丢数据，清除应用数据才会，建议定期用设置里的“导出”备份（设置 → 数据管理会显示上次导出时间和存储用量）。
+
 ## 构建
 
 ```powershell
 pnpm build
 ```
 
-产物在 `dist/`，可直接双击 `dist/index.html` 打开，也可以部署到任意静态服务器。
+产物在 `dist/`，包含 `index.html`、`static/`、`manifest.webmanifest`、`sw.js` 与 `icons/`，可直接双击 `dist/index.html` 打开，也可以部署到任意静态服务器。
 
 ## 与原仓库的差异
 

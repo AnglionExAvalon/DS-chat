@@ -198,6 +198,40 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+/* 云同步：输入框与多个操作按钮需要换行 */
+.syncCell {
+  flex-wrap: wrap;
+}
+
+.syncForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.syncInput {
+  box-sizing: border-box;
+  width: 190px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-specific-input-major);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+}
+
+.syncInput::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.syncInput:focus {
+  outline: none;
+  border-color: var(--dsw-alias-brand-text);
+}
+
 .error {
   font-size: 12px;
   line-height: 18px;

@@ -25,12 +25,18 @@ type ConfigOptions = {
   apiOrigin?: string
   /** 开发服务器配置，支持本地接口代理 */
   devServer?: Configuration['devServer']
+  /** 云同步使用的 Supabase 项目地址，注入为 __SUPABASE_URL__ */
+  supabaseUrl?: string
+  /** Supabase 可公开的 publishable key，注入为 __SUPABASE_KEY__ */
+  supabaseKey?: string
 }
 
 /** 创建构建配置，支持自定义 API 地址和开发服务器选项 */
 export const createConfig = ({
   apiOrigin = 'https://api.deepseek.com',
   devServer,
+  supabaseUrl = 'https://vieaistzdojvahjwqglx.supabase.co',
+  supabaseKey = 'sb_publishable_RqoVNY4soQ5G5P6uz1g9pg_qQ14ZgB6',
 }: ConfigOptions = {}): Configuration => ({
   mode,
   entry: './src/main.tsx',
@@ -84,9 +90,19 @@ export const createConfig = ({
       scriptLoading: 'defer',
       meta: { 'application-version': version },
     }),
-    new rspack.DefinePlugin({ __API_ORIGIN__: JSON.stringify(apiOrigin) }),
+    new rspack.DefinePlugin({
+      __API_ORIGIN__: JSON.stringify(apiOrigin),
+      __SUPABASE_URL__: JSON.stringify(supabaseUrl),
+      __SUPABASE_KEY__: JSON.stringify(supabaseKey),
+    }),
     new rspack.CopyRspackPlugin({
-      patterns: [{ from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' }],
+      patterns: [
+        { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        // PWA：清单、Service Worker 与图标需要放在产物根目录
+        { from: path.resolve(root, 'src/manifest.webmanifest'), to: 'manifest.webmanifest' },
+        { from: path.resolve(root, 'src/sw.js'), to: 'sw.js' },
+        { from: path.resolve(root, 'src/assets/icons'), to: 'icons' },
+      ],
     }),
   ],
   performance: { hints: false },

@@ -22,6 +22,7 @@ import { showToast } from '../components/base/toastState.js'
 import { onUploadNotice } from '../services/attachments.js'
 import { Button } from '../components/base/Button.js'
 import { stopReadAloud } from '../services/speech/readAloud.js'
+import { ensurePersistentStorage } from '../services/storage.js'
 import { CollapsedSider } from '../components/sider/CollapsedSider.js'
 import { closeMobileSider } from '../components/sider/mobileSiderState.js'
 import { MobileSider, Sider } from '../components/sider/Sider.js'
@@ -70,6 +71,8 @@ export const App = () => {
 
   useEffect(() => {
     void initChat()
+    // 申请持久化存储，避免浏览器在磁盘紧张时清理本地会话
+    void ensurePersistentStorage()
     // 没有 API Key 时先引导获取；填写成功后再提示数据存储位置
     if (!useSettings.getState().apiKey) {
       openOnboarding('ask')
