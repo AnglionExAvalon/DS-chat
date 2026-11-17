@@ -4,7 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from '@rspack/cli'
 import { rspack, type Configuration } from '@rspack/core'
 
-const dev = process.env.NODE_ENV !== 'production'
+/** 构建模式：优先 NODE_ENV，其次按 rspack 子命令（build 为生产、serve 为开发），不依赖 POSIX 风格的环境变量前缀 */
+const mode: Configuration['mode'] =
+  (process.env.NODE_ENV as Configuration['mode'] | undefined) ??
+  (process.argv.includes('build') ? 'production' : 'development')
+const dev = mode !== 'production'
 const targets = ['chrome >= 105', 'edge >= 105', 'safari >= 16', 'firefox >= 110']
 const root = path.dirname(fileURLToPath(import.meta.url))
 const { version } = JSON.parse(
@@ -28,7 +32,7 @@ export const createConfig = ({
   apiOrigin = 'https://api.deepseek.com',
   devServer,
 }: ConfigOptions = {}): Configuration => ({
-  mode: dev ? 'development' : 'production',
+  mode,
   entry: './src/main.tsx',
   output: {
     path: path.resolve(root, 'dist'),
