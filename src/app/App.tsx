@@ -14,8 +14,9 @@ import { closeSearchPanel } from '../components/search/searchPanelState.js'
 import { SessionView } from '../components/session/SessionView.js'
 import { MobileHeader } from '../components/session/MobileHeader.js'
 import { Welcome } from '../components/session/Welcome.js'
-import { ensureApiKey } from '../components/settings/settingsDialogState.js'
 import { SettingsDialog } from '../components/settings/SettingsDialog.js'
+import { OnboardingDialog } from '../components/onboarding/OnboardingDialog.js'
+import { openOnboarding } from '../components/onboarding/onboardingState.js'
 import { Toast } from '../components/base/Toast.js'
 import { showToast } from '../components/base/toastState.js'
 import { onUploadNotice } from '../services/attachments.js'
@@ -69,9 +70,22 @@ export const App = () => {
 
   useEffect(() => {
     void initChat()
-    // 首次打开先在设置里输入 API Key
-    ensureApiKey()
+    // 没有 API Key 时先引导获取；填写成功后再提示数据存储位置
+    if (!useSettings.getState().apiKey) {
+      openOnboarding('ask')
+    }
   }, [])
+
+  // API Key 从空变为有值时，说明刚填写完成，提示 Key 与聊天记录只存在本地
+  useEffect(
+    () =>
+      useSettings.subscribe((state, previous) => {
+        if (!previous.apiKey && state.apiKey) {
+          openOnboarding('storage')
+        }
+      }),
+    []
+  )
 
   return (
     <>
@@ -133,6 +147,7 @@ export const App = () => {
         <SearchPanel />
       </div>
       <SettingsDialog />
+      <OnboardingDialog />
       <Toast />
     </>
   )

@@ -5,6 +5,12 @@ declare module '*.module.css' {
 
 declare module '*.css' {}
 
+/** 图片按 url 导入，由 rspack.config.ts 的 asset/resource 规则处理 */
+declare module '*.png' {
+  const url: string
+  export default url
+}
+
 /** 公开 API 的地址，见 rspack.config.ts 的 createConfig */
 declare const __API_ORIGIN__: string
 

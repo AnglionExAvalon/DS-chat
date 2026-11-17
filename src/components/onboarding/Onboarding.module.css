@@ -1,0 +1,63 @@
+.text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: pre-line;
+}
+
+/* 获取步骤需要放两张截图，比默认 380px 宽 */
+.wide {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.scrollable {
+  max-height: min(62vh, 560px);
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
+.steps {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.steps li + li {
+  margin-top: 6px;
+}
+
+.figure {
+  margin: 0 0 16px;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+}
+
+.caption {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.links a {
+  color: var(--dsw-alias-brand-text);
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}

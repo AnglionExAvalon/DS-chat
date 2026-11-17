@@ -41,6 +41,31 @@ export const zh = {
   usagePeakNow: '高峰',
   usageOffPeakNow: '空闲',
   usagePeakWindow: '工作日高峰 {windows}',
+  onboardingAskTitle: '开始使用前',
+  onboardingAskBody:
+    '本站只提供聊天界面，不提供 API 服务。你需要自己准备 DeepSeek API Key，聊天费用由你自己的账户承担。',
+  onboardingHasKey: '我有 API Key',
+  onboardingNoKey: '我还没有',
+  onboardingStepsTitle: '如何获取 API Key',
+  onboardingStep1:
+    '打开 DeepSeek 开放平台的 API keys 页面，点右上角「创建 API key」（下图中已用红圈标出）。',
+  onboardingStep2: '名称随意填写，例如 chat-demo，然后点「创建」。',
+  onboardingStep3:
+    '创建后 Key 只会完整显示一次，请立即复制，保存在只有你能看到的地方；之后可以一直复用这把 Key。',
+  onboardingStep4:
+    '新账号余额为 0，需要先在「充值」页面充值。deepseek-flash 价格很低，10 元足够日常使用很久。',
+  onboardingImageApiKeysAlt: 'API keys 页面，右上角「创建 API key」按钮被红圈标出',
+  onboardingImageApiKeysCaption: '① API keys 页面：点右上角「创建 API key」',
+  onboardingImageCreateAlt: '创建 API key 弹窗，输入名称后点创建',
+  onboardingImageCreateCaption: '② 名称随意填写，点「创建」后复制生成的 Key',
+  onboardingOpenApiKeys: '打开 API keys 页面',
+  onboardingTopUp: '去充值',
+  onboardingGotKey: '我已拿到 Key，去填写',
+  onboardingLater: '稍后再说',
+  onboardingStorageTitle: '数据保存在哪里',
+  onboardingStorageBody:
+    'API Key 和聊天记录都只保存在你当前浏览器的本地存储中，不会上传到云端，也不会发送给本站作者。\n下次用同一台电脑、同一个浏览器打开本页面，这些内容仍然可用。清除浏览器数据会把它们一并删除，请不要在公共电脑上填写 Key。',
+  onboardingStorageOk: '知道了',
   messageVersions: '消息版本',
   previousVersion: '上一个版本',
   nextVersion: '下一个版本',

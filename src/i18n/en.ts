@@ -45,6 +45,31 @@ export const en = {
   usagePeakNow: 'Peak',
   usageOffPeakNow: 'Off-peak',
   usagePeakWindow: 'Weekday peak {windows}',
+  onboardingAskTitle: 'Before you start',
+  onboardingAskBody:
+    'This site only provides the chat UI, not the API service. You need your own DeepSeek API key, and usage is billed to your own account.',
+  onboardingHasKey: 'I have a key',
+  onboardingNoKey: 'I need one',
+  onboardingStepsTitle: 'How to get an API key',
+  onboardingStep1:
+    'Open the API keys page of the DeepSeek platform and click "Create API key" in the top right (circled in the screenshot below).',
+  onboardingStep2: 'Enter any name, for example chat-demo, then click "Create".',
+  onboardingStep3:
+    'The key is shown in full only once. Copy it right away and keep it somewhere only you can see; you can reuse the same key later.',
+  onboardingStep4:
+    'A new account starts with a zero balance, so top up first. deepseek-flash is cheap: 10 CNY lasts a long time for everyday use.',
+  onboardingImageApiKeysAlt: 'API keys page with the "Create API key" button circled in red',
+  onboardingImageApiKeysCaption: 'Step 1: on the API keys page, click "Create API key"',
+  onboardingImageCreateAlt: 'Create API key dialog with a name field',
+  onboardingImageCreateCaption: 'Step 2: name it anything, then copy the generated key',
+  onboardingOpenApiKeys: 'Open the API keys page',
+  onboardingTopUp: 'Top up',
+  onboardingGotKey: 'I have the key, go fill it in',
+  onboardingLater: 'Later',
+  onboardingStorageTitle: 'Where your data lives',
+  onboardingStorageBody:
+    'Your API key and chat history are stored only in this browser, never uploaded to a server and never sent to the site author.\nThey remain available the next time you open this page in the same browser. Clearing browser data deletes them, so avoid entering your key on a shared computer.',
+  onboardingStorageOk: 'Got it',
   messageVersions: 'Message versions',
   previousVersion: 'Previous version',
   nextVersion: 'Next version',

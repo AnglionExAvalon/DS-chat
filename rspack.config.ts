@@ -74,7 +74,7 @@ export const createConfig = ({
         },
         type: 'javascript/auto',
       },
-      { test: /\.(woff2?|ttf)$/, type: 'asset/resource' },
+      { test: /\.(woff2?|ttf|png|jpe?g|webp|svg)$/, type: 'asset/resource' },
     ],
   },
   plugins: [
