@@ -8,7 +8,7 @@ Personal fork of the DeepSeek chat demo, based on [deepseek-ai/chat-demo](https:
 - This fork's deployment: <https://anglionexavalon.github.io/DS-chat/>
 - Changes, git sync workflow and repository settings: see [NOTES.md](NOTES.md)
 
-## Run
+## Local development
 
 Requires Node.js 22.12+ and pnpm.
 
@@ -17,7 +17,16 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:8090> . Enter a DeepSeek API key in Settings before the first chat; the key is stored in browser localStorage and never committed.
+Open <http://localhost:8090>. **This address only works on your own machine**: `localhost` points at the visitor's own computer, and the dev server stops when the terminal closes. Share the address below with other people.
+
+Enter a DeepSeek API key in Settings before the first chat; the key is stored in browser localStorage and never committed.
+
+## Online
+
+- This fork: <https://anglionexavalon.github.io/DS-chat/>
+- Official demo: <https://deepseek-ai.github.io/chat-demo/>
+
+Pushes to `main` are built and published by GitHub Actions.
 
 ## Build
 

@@ -8,7 +8,7 @@ DeepSeek 聊天界面的个人 fork，基于 [deepseek-ai/chat-demo](https://git
 - 本仓库的在线体验：<https://anglionexavalon.github.io/DS-chat/>
 - 自用改动、git 同步方式与仓库设置：见 [NOTES.md](NOTES.md)
 
-## 运行
+## 本地开发
 
 需要 Node.js 22.12+ 和 pnpm。
 
@@ -17,7 +17,16 @@ pnpm install
 pnpm dev
 ```
 
-打开 <http://localhost:8090> 。首次使用前需要在设置里填写 DeepSeek API Key，Key 只保存在浏览器 localStorage，不会进入代码仓库。
+打开 <http://localhost:8090> 。**该地址仅本机可访问**：`localhost` 指向访问者自己的电脑，且开发服务器关闭终端即停止，其他人无法打开。请把下面的在线地址发给别人。
+
+首次使用前需要在设置里填写 DeepSeek API Key，Key 只保存在浏览器 localStorage，不会进入代码仓库。
+
+## 在线访问
+
+- 本仓库的部署：<https://anglionexavalon.github.io/DS-chat/>
+- 官方演示：<https://deepseek-ai.github.io/chat-demo/>
+
+推送到 `main` 后由 GitHub Actions 自动构建并发布。
 
 ## 构建
 
