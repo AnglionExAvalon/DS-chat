@@ -203,6 +203,11 @@
   flex-wrap: wrap;
 }
 
+/* 清除本地数据的确认文案有多个段落 */
+.resetConfirmText {
+  white-space: pre-line;
+}
+
 .syncForm {
   display: flex;
   flex-wrap: wrap;

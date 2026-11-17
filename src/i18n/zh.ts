@@ -108,6 +108,16 @@ export const zh = {
   syncEmptyLocal: '本地还没有对话可以上传',
   syncEmptyRemote: '云端还没有记录，请先在另一台设备上传',
   syncFailed: '同步失败，请稍后重试',
+  resetLocal: '清除全部本地数据',
+  resetLocalDescription:
+    '清除本机的对话、附件、API Key 和设置，公共电脑使用完可以一键清理。云端同步记录不受影响。',
+  resetLocalAction: '清除',
+  resetLocalBusy: '正在清除…',
+  resetLocalConfirmTitle: '清除全部本地数据？',
+  resetLocalConfirmBody:
+    '这会删除本机的所有对话、附件、API Key 和设置，并清空页面缓存，操作无法撤销。\n清除后页面会自动回到首次访问的状态。\n云端记录仍然保留：请确认已保存同步码，之后输入同一个同步码即可恢复；尚未上传到云端的记录将彻底丢失。',
+  resetLocalConfirm: '确认清除',
+  resetLocalFailed: '清除失败，请重试',
   messageVersions: '消息版本',
   previousVersion: '上一个版本',
   nextVersion: '下一个版本',

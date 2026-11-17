@@ -17,6 +17,7 @@ import {
 } from '../../services/chat/backup.js'
 import { useIsMobile } from '../../app/viewport.js'
 import { useChatStore } from '../../services/chat/store.js'
+import { clearLocalData } from '../../services/reset.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
 import {
   ensurePersistentStorage,
@@ -140,6 +141,7 @@ const SettingsContent = () => {
                   </Button>
                 }
               />
+              <ClearAllLocal disabled={historyBusy} />
               {isMobile ? <ApiKeyConfirm editor={apiKeyEditor} /> : null}
             </>
           )}
@@ -808,6 +810,75 @@ const SyncSection = () => {
           }
         >
           {t(confirm === 'push' ? 'syncPushConfirmBody' : 'syncPullConfirmBody')}
+        </Modal>
+      ) : null}
+    </>
+  )
+}
+
+/** 清除本机全部数据：对话、附件、API Key、设置与静态缓存，完成后回到首次访问状态 */
+const ClearAllLocal = ({ disabled }: { disabled: boolean }) => {
+  const t = useTranslate()
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const run = async () => {
+    setBusy(true)
+    try {
+      await clearLocalData()
+      // 重新加载后内存状态也随之清空，App 会重新弹出首次访问的引导
+      window.location.reload()
+    } catch {
+      setBusy(false)
+      setConfirming(false)
+      showToast({ key: 'resetLocalFailed', type: 'error' })
+    }
+  }
+
+  return (
+    <>
+      <SettingCell
+        label={t('resetLocal')}
+        description={t('resetLocalDescription')}
+        status={null}
+        action={
+          <Button
+            variant="danger"
+            size="m"
+            className={styles.cellButton}
+            disabled={disabled || busy}
+            onClick={() => setConfirming(true)}
+          >
+            {t(busy ? 'resetLocalBusy' : 'resetLocalAction')}
+          </Button>
+        }
+      />
+      {confirming ? (
+        <Modal
+          title={t('resetLocalConfirmTitle')}
+          className={styles.deleteConfirm}
+          onClose={() => {
+            if (!busy) {
+              setConfirming(false)
+            }
+          }}
+          footer={
+            <div className={styles.deleteActions} aria-busy={busy}>
+              <Button
+                variant="outlined"
+                autoFocus
+                disabled={busy}
+                onClick={() => setConfirming(false)}
+              >
+                {t('cancel')}
+              </Button>
+              <Button variant="danger" disabled={busy} onClick={() => void run()}>
+                {t(busy ? 'resetLocalBusy' : 'resetLocalConfirm')}
+              </Button>
+            </div>
+          }
+        >
+          <div className={styles.resetConfirmText}>{t('resetLocalConfirmBody')}</div>
         </Modal>
       ) : null}
     </>

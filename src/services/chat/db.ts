@@ -167,6 +167,22 @@ export const clearStaging = async (): Promise<void> => {
   ])
 }
 
+/** 清空全部会话、摘要、附件与导入暂存，用于「清除全部本地数据」 */
+export const clearAll = async (): Promise<void> => {
+  const tx = (await getDB()).transaction(
+    ['sessions', 'sessionSummaries', 'files', 'sessionsStaging', 'filesStaging'],
+    'readwrite'
+  )
+  await Promise.all([
+    tx.objectStore('sessions').clear(),
+    tx.objectStore('sessionSummaries').clear(),
+    tx.objectStore('files').clear(),
+    tx.objectStore('sessionsStaging').clear(),
+    tx.objectStore('filesStaging').clear(),
+    tx.done,
+  ])
+}
+
 export const addStagingSession = async (session: Session): Promise<void> => {
   await (await getDB()).add('sessionsStaging', session)
 }

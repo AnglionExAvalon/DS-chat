@@ -106,6 +106,23 @@ git switch main                # 切回主线
 
 Android 安装包（APK）尚未实现。计划用 Capacitor 包装现有 `dist/`，由 GitHub Actions 构建并挂到 Release 供下载；需注意 APK 内页面 origin 不同，可能要改用 `CapacitorHttp` 绕开 CORS。iOS 的 IPA 需要 Apple 开发者账号，暂不做。
 
+## 本地数据清理
+
+设置 → 数据管理 →「清除全部本地数据」（`src/services/reset.ts`）会：
+
+- 清空 IndexedDB 的会话、摘要、附件与导入暂存（`db.clearAll`）
+- 删除 localStorage 中所有 `chat-demo:` 前缀的键（API Key、语言、主题、同步码、导出时间等）
+- 删除 Service Worker 缓存（`ds-chat` 前缀）
+- 刷新页面，回到首次访问状态并重新弹出获取 API Key 的引导
+
+云端同步记录不受影响：重新输入同步码即可恢复。确认弹窗会提示先保存同步码。
+
 ## 跨设备同步
 
-当前没有云同步：数据按 origin 存在各自设备，换设备需要“导出 ZIP → 新设备导入”（导入会覆盖本地全部会话）。要做真正的多设备同步必须引入后端（例如 Cloudflare Workers + D1、Supabase），并建议聊天记录加密后上传、API Key 始终只留在本地。
+已实现基于 Supabase 的端到端加密同步（`src/services/sync.ts`）：同步码派生邮箱/口令与 AES-GCM 密钥，云端只存密文。设置 → 数据管理 →「云同步」生成或输入同步码即可上传、恢复。
+
+- Supabase 项目地址与 publishable key 通过 `rspack.config.ts` 的 `DefinePlugin` 注入（`__SUPABASE_URL__` / `__SUPABASE_KEY__`）
+- 表结构：`public.snapshots(user_id, payload, version, updated_at)`，RLS 限定本人可读写
+- 后台需关闭 Authentication → Sign In / Providers → **Confirm email**
+- 上传与恢复都是整份覆盖，恢复前有二次确认
+- 只同步文字与消息结构，不含图片原件；免费项目 7 天无请求会被暂停

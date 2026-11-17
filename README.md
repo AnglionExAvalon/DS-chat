@@ -38,6 +38,18 @@ The site is installable, so it opens in its own window without browser chrome:
 
 Data still lives on the device only. Removing the icon usually keeps the data; clearing app data deletes it, so export a backup from Settings regularly (Settings → Data shows the last export time and storage usage).
 
+On a shared computer, use Settings → Data → “Clear all local data” to wipe conversations, the API key, settings and page caches in one click; cloud records stay intact.
+
+## Cloud sync
+
+Generate a sync code on one device and enter the same code elsewhere to share chats:
+
+1. Settings → Data → Cloud sync → “Generate”, keep the code safe
+2. Click “Connect”, then “Upload”
+3. On another device, enter the same code → “Connect” → “Restore”
+
+Content is encrypted in the browser before upload, the server only stores ciphertext, and the API key is never synced. “Restore” replaces local chats with the cloud copy and asks for confirmation first.
+
 ## Build
 
 ```powershell

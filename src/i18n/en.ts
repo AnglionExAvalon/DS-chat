@@ -115,6 +115,16 @@ export const en = {
   syncEmptyLocal: 'No local conversations to upload',
   syncEmptyRemote: 'Nothing in the cloud yet, upload from another device first',
   syncFailed: 'Sync failed, please retry',
+  resetLocal: 'Clear all local data',
+  resetLocalDescription:
+    'Removes conversations, attachments, the API key and settings from this device — useful before leaving a shared computer. Cloud records are not affected.',
+  resetLocalAction: 'Clear',
+  resetLocalBusy: 'Clearing…',
+  resetLocalConfirmTitle: 'Clear all local data?',
+  resetLocalConfirmBody:
+    'This deletes every conversation, attachment, the API key and settings on this device, and clears page caches. It cannot be undone.\nThe page returns to the first-visit state.\nCloud records stay: make sure you saved your sync code so you can restore them later. Anything not uploaded will be lost for good.',
+  resetLocalConfirm: 'Clear everything',
+  resetLocalFailed: 'Failed to clear, please retry',
   messageVersions: 'Message versions',
   previousVersion: 'Previous version',
   nextVersion: 'Next version',
