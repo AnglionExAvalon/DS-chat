@@ -3,6 +3,7 @@ import { useIsMobile } from '../../app/viewport.js'
 import { useTranslate } from '../../i18n/index.js'
 import type { Session } from '../../services/chat/types.js'
 import { ChatInput } from '../chatInput/ChatInput.js'
+import { StatsPanel } from '../chatInput/StatsPanel.js'
 import { MessageList } from '../messages/MessageList.js'
 import { MobileHeader } from './MobileHeader.js'
 import styles from './SessionView.module.css'
@@ -36,7 +37,12 @@ export const SessionView = ({
         streaming={streaming}
         footer={
           <div className={styles.inputContainer}>
-            <ChatInput sessionId={session.id} />
+            <div className={styles.inputRow}>
+              <StatsPanel sessionId={session.id} />
+              <div className={styles.inputArea}>
+                <ChatInput sessionId={session.id} />
+              </div>
+            </div>
             <div className={styles.caveat}>{t('contentCaveat')}</div>
           </div>
         }

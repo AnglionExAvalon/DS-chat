@@ -258,3 +258,17 @@ export type ApiErrorBody = {
     code?: string | null
   }
 }
+
+/** GET /user/balance 的响应：账户是否可用与各币种余额（字符串，保留两位小数） */
+export type BalanceInfo = {
+  currency: string
+  /** 总余额，含未过期赠金与充值余额 */
+  total_balance: string
+  granted_balance: string
+  topped_up_balance: string
+}
+
+export type UserBalance = {
+  is_available: boolean
+  balance_infos: BalanceInfo[]
+}

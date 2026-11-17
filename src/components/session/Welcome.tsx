@@ -1,6 +1,7 @@
 import { useIsMobile } from '../../app/viewport.js'
 import { useTranslate } from '../../i18n/index.js'
 import { ChatInput } from '../chatInput/ChatInput.js'
+import { StatsPanel } from '../chatInput/StatsPanel.js'
 import { MobileHeader } from './MobileHeader.js'
 import styles from './Welcome.module.css'
 
@@ -13,7 +14,12 @@ export const Welcome = () => {
       {isMobile ? <MobileHeader /> : null}
       <div className={styles.welcome}>
         <div className={styles.greeting}>{t('welcomeMessageChat250808')}</div>
-        <ChatInput sessionId={null} />
+        <div className={styles.inputRow}>
+          <StatsPanel sessionId={null} />
+          <div className={styles.inputArea}>
+            <ChatInput sessionId={null} />
+          </div>
+        </div>
         {isMobile ? <div className={styles.caveat}>{t('contentCaveat')}</div> : null}
       </div>
     </div>

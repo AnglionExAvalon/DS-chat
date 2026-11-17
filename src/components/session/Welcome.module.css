@@ -28,6 +28,19 @@
   color: var(--dsw-alias-label-primary);
 }
 
+/* 用量盒子与输入框并排，盒子在左 */
+.inputRow {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+}
+
+.inputArea {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (max-width: 439px) {
   .greeting {
     font-size: 20px;
@@ -64,5 +77,11 @@
     text-align: center;
     color: var(--dsw-alias-label-tertiary);
     user-select: none;
+  }
+
+  /* 窄屏放不下并排，盒子移到输入框上方 */
+  .inputRow {
+    flex-direction: column;
+    gap: 8px;
   }
 }

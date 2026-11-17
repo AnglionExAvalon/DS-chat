@@ -1,0 +1,46 @@
+.panel {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 148px;
+  padding: 10px 12px;
+  border-radius: 24px;
+  border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
+  background: var(--dsw-specific-input-major);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.02),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+  font-size: 12px;
+  line-height: 18px;
+  user-select: none;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.label {
+  flex-shrink: 0;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.value {
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media not all and (min-width: 768px) {
+  .panel {
+    width: 100%;
+    border-radius: 20px;
+  }
+}
