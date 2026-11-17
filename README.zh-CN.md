@@ -2,6 +2,8 @@
 
 [English](README.md) | 简体中文
 
+> **个人 fork 说明。** 本仓库是 [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo) 的个人 fork，仅用于个人使用与本地开发，不是官方版本。官方版本、在线体验与最新文档请以原仓库为准；与原仓库的差异和 git 同步方式见 [NOTES.md](NOTES.md)。
+
 基于 DeepSeek API 的静态聊天示例。无需应用后端，浏览器直接请求配置的 API 服务。
 
 点击 [在线体验](https://deepseek-ai.github.io/chat-demo/) 即可使用，也可以前往 [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases) 下载压缩包，解压后双击 `index.html` 在本地使用，无需安装或构建。首次使用时，请在设置中填写 API Key。

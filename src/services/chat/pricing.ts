@@ -16,7 +16,13 @@ const PEAK_MULTIPLIER = 2
 /** Search / Fetch 按成功请求计费：每 1,000 次 5 元，与时段无关 */
 const SEARCH_PRICE = 0.005
 
-/** 高峰时段：工作日 UTC 01:00–04:00 与 06:00–10:00 */
+/** 高峰时段窗口（UTC 小时，左闭右开）：工作日 01:00–04:00 与 06:00–10:00 */
+export const PEAK_WINDOWS: readonly (readonly [number, number])[] = [
+  [1, 4],
+  [6, 10],
+]
+
+/** 高峰时段：工作日落在窗口内即高峰，周末全天空闲 */
 export const isPeakHour = (time: number): boolean => {
   const date = new Date(time)
   const weekday = date.getUTCDay()
@@ -24,7 +30,24 @@ export const isPeakHour = (time: number): boolean => {
     return false
   }
   const hour = date.getUTCHours()
-  return (hour >= 1 && hour < 4) || (hour >= 6 && hour < 10)
+  return PEAK_WINDOWS.some(([start, end]) => hour >= start && hour < end)
+}
+
+const padHour = (value: number) => String(value).padStart(2, '0')
+
+/** UTC 小时换算成当前时区的 HH:MM，跨天时取模 */
+const localTime = (utcHour: number, offsetMinutes: number): string => {
+  const minutes = (((utcHour * 60 + offsetMinutes) % 1440) + 1440) % 1440
+  return `${padHour(Math.floor(minutes / 60))}:${padHour(minutes % 60)}`
+}
+
+/** 高峰窗口的本地时间文本，用于界面提示，形如 09:00-12:00 / 14:00-18:00 */
+export const formatPeakWindows = (): string => {
+  // getTimezoneOffset 返回 UTC 减本地，东八区为 -480
+  const offset = -new Date().getTimezoneOffset()
+  return PEAK_WINDOWS.map(
+    ([start, end]) => `${localTime(start, offset)}-${localTime(end, offset)}`
+  ).join(' / ')
 }
 
 /**

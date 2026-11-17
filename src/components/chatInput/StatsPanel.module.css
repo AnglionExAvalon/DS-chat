@@ -3,10 +3,10 @@
   flex-shrink: 0;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   box-sizing: border-box;
-  width: 148px;
-  padding: 10px 12px;
+  width: 152px;
+  padding: 8px 12px;
   border-radius: 24px;
   border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
   background: var(--dsw-specific-input-major);
@@ -16,6 +16,43 @@
   font-size: 12px;
   line-height: 18px;
   user-select: none;
+}
+
+/* 顶部实时钟与当前时段：高峰红色，空闲绿色 */
+.clockRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock {
+  letter-spacing: 0.3px;
+}
+
+.peak {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.offPeak {
+  color: var(--dsw-static-green-500);
+}
+
+/* 底部高峰时段：按本地时区换算，允许换行 */
+.peakWindow {
+  margin-top: 3px;
+  padding-top: 5px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--dsw-alias-label-tertiary);
+  white-space: normal;
 }
 
 .row {

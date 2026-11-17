@@ -1,42 +1,31 @@
-import { memo, useEffect, useMemo } from 'react'
+import clsx from 'clsx'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import { useBalance } from '../../services/balance.js'
-import { estimateCost } from '../../services/chat/pricing.js'
+import { estimateCost, formatPeakWindows, isPeakHour } from '../../services/chat/pricing.js'
 import { useChatStore } from '../../services/chat/store.js'
 import type { Session } from '../../services/chat/types.js'
 import { useSettings } from '../../services/settings.js'
-import { formatCost, formatTokenCount } from '../../utils/format.js'
+import { formatClock, formatCost } from '../../utils/format.js'
 import { Tooltip } from '../base/Tooltip.js'
 import styles from './StatsPanel.module.css'
 
 type Totals = {
-  /** 输入总量，含缓存命中与缓存写入 */
-  input: number
-  output: number
-  /** 输入中命中缓存的部分 */
-  cached: number
   /** 估算消耗（元） */
   cost: number
 }
 
-const EMPTY_TOTALS: Totals = { input: 0, output: 0, cached: 0, cost: 0 }
-
 const summarize = (session: Session | undefined): Totals => {
+  const totals: Totals = { cost: 0 }
   if (!session) {
-    return EMPTY_TOTALS
+    return totals
   }
-  const totals = { ...EMPTY_TOTALS }
   // 各分支、重新生成与续写都真实扣费，一并计入
   for (const message of session.messages) {
     if (message.role !== 'assistant' || !message.usage) {
       continue
     }
-    const { usage } = message
-    totals.input +=
-      usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
-    totals.output += usage.output_tokens
-    totals.cached += usage.cache_read_input_tokens
-    totals.cost += estimateCost(usage, message.model, message.createdAt)
+    totals.cost += estimateCost(message.usage, message.model, message.createdAt)
   }
   return totals
 }
@@ -58,6 +47,16 @@ export const StatsPanel = memo(function StatsPanel({ sessionId }: { sessionId: s
   const initialBalance = useBalance((state) => state.initial)
   const refreshBalance = useBalance((state) => state.refresh)
   const totals = useMemo(() => summarize(session), [session])
+  const peakWindows = useMemo(() => formatPeakWindows(), [])
+  const [now, setNow] = useState(() => Date.now())
+
+  // 顶部时钟每秒刷新，同时用于判断当前是否处在高峰时段
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const peak = isPeakHour(now)
 
   // 余额是账户级数据：有 API Key 时查询，并由定时器兜底刷新
   useEffect(() => {
@@ -79,19 +78,12 @@ export const StatsPanel = memo(function StatsPanel({ sessionId }: { sessionId: s
   // 余额只有两位小数，短会话看不出变化，因此按页面打开以来的差值展示
   const charged =
     balance === null || initialBalance === null ? null : Math.max(0, initialBalance - balance)
-  // 缓存命中率：命中部分占输入总量的比例，无输入时显示占位符
-  const cachedPercent =
-    totals.input > 0 ? `${Math.round((totals.cached / totals.input) * 100)}%` : '—'
 
   return (
     <div className={styles.panel}>
-      <div className={styles.row}>
-        <span className={styles.label}>{t('usageInput')}</span>
-        <span className={styles.value}>{formatTokenCount(totals.input)}</span>
-      </div>
-      <div className={styles.row}>
-        <span className={styles.label}>{t('usageOutput')}</span>
-        <span className={styles.value}>{formatTokenCount(totals.output)}</span>
+      <div className={clsx(styles.clockRow, peak ? styles.peak : styles.offPeak)}>
+        <span className={styles.clock}>{formatClock(now)}</span>
+        <span>{t(peak ? 'usagePeakNow' : 'usageOffPeakNow')}</span>
       </div>
       <Tooltip
         content={charged === null ? null : t('usageRealCost', { value: formatCost(charged) })}
@@ -102,15 +94,12 @@ export const StatsPanel = memo(function StatsPanel({ sessionId }: { sessionId: s
         </div>
       </Tooltip>
       <div className={styles.row}>
-        <span className={styles.label}>{t('usageCached')}</span>
-        <span className={styles.value}>{cachedPercent}</span>
-      </div>
-      <div className={styles.row}>
         <span className={styles.label}>{t('usageBalanceLabel')}</span>
         <span className={styles.value}>
           {balance === null ? '—' : t('usageCost', { value: formatCost(balance) })}
         </span>
       </div>
+      <div className={styles.peakWindow}>{t('usagePeakWindow', { windows: peakWindows })}</div>
     </div>
   )
 })

@@ -2,6 +2,8 @@
 
 English | [简体中文](README.zh-CN.md)
 
+> **Personal fork notice.** This repository is a personal fork of [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo), kept for personal use and local development; it is not an official release. Upstream remains the source of truth for the official version, online demo and documentation. See [NOTES.md](NOTES.md) for the differences from upstream and the git sync workflow.
+
 A static chat demo powered by the DeepSeek API. No application backend is required: the browser connects directly to the configured API service.
 
 You can [try the app online](https://deepseek-ai.github.io/chat-demo/) or download the archive from [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases), extract it, and double-click `index.html` to use it locally without installation or a build. Enter your API key in Settings before your first chat.

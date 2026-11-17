@@ -47,3 +47,11 @@ export const formatCost = (value: number): string => {
   }
   return value < 1 ? value.toFixed(3) : value.toFixed(2)
 }
+
+/** 本地时间的 时:分:秒，用于实时钟 */
+export const formatClock = (value: number): string => {
+  const date = new Date(value)
+  return [date.getHours(), date.getMinutes(), date.getSeconds()]
+    .map((part) => pad(part))
+    .join(':')
+}
