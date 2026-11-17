@@ -1,77 +1,41 @@
-# chat-demo
+# DS-chat
 
 English | [简体中文](README.zh-CN.md)
 
-> **Personal fork notice.** This repository is a personal fork of [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo), kept for personal use and local development; it is not an official release. Upstream remains the source of truth for the official version, online demo and documentation. See [NOTES.md](NOTES.md) for the differences from upstream and the git sync workflow.
+Personal fork of the DeepSeek chat demo, based on [deepseek-ai/chat-demo](https://github.com/deepseek-ai/chat-demo) and **maintained for personal use and local development only**.
 
-A static chat demo powered by the DeepSeek API. No application backend is required: the browser connects directly to the configured API service.
+- Upstream: <https://github.com/deepseek-ai/chat-demo>
+- This fork's deployment: <https://anglionexavalon.github.io/DS-chat/>
+- Changes, git sync workflow and repository settings: see [NOTES.md](NOTES.md)
 
-You can [try the app online](https://deepseek-ai.github.io/chat-demo/) or download the archive from [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases), extract it, and double-click `index.html` to use it locally without installation or a build. Enter your API key in Settings before your first chat.
+## Run
 
-## Getting started
+Requires Node.js 22.12+ and pnpm.
 
-Install Node.js 22.12+ and pnpm, then run:
-
-```sh
-git clone https://github.com/deepseek-ai/chat-demo.git
-cd chat-demo
+```powershell
 pnpm install
 pnpm dev
 ```
 
-Open http://localhost:8090.
+Open <http://localhost:8090> . Enter a DeepSeek API key in Settings before the first chat; the key is stored in browser localStorage and never committed.
 
-To build the static site:
+## Build
 
-```sh
+```powershell
 pnpm build
 ```
 
-The output is written to `dist/`. Deploy it to a static web server or open `dist/index.html` directly. Opening the file directly requires browser support for storage on `file://` pages and an API service that permits their cross-origin requests.
+Output goes to `dist/`. Open `dist/index.html` directly or deploy it to any static host.
 
-## Features
+## Differences from upstream
 
-- Multiple conversations with automatic titles, renaming, and deletion; edit prompts, regenerate replies, and switch between message branches.
-- Streaming replies, deep thinking, smart search, link reading, and source citations; stop generation or continue eligible replies.
-- Upload, paste, or drag and drop attachments; use voice input and read replies aloud. A live audio spectrum appears in the first row of the input area while recording on mobile.
-- Markdown, syntax highlighting, KaTeX math, and Mermaid diagrams.
-- Simplified Chinese and English, light and dark themes, mobile layouts, location settings, and chat history import and export.
+- **Cross-platform build**: the POSIX-only `rm -rf` and `NODE_ENV` prefix are gone from `package.json`, and `rspack.config.ts` infers the mode from the rspack subcommand, so `pnpm build` works in cmd and PowerShell
+- **Usage panel left of the input**: live clock with peak / off-peak state (red / green), session spend, account balance, and the peak-hour windows converted to local time
 
-## Data and storage
+## Note
 
-Your API key and settings are stored in the browser's localStorage. Conversations and original attachments are stored in IndexedDB. Local data is isolated by browser profile and site origin. Sending messages, uploading attachments, and using speech features sends the relevant content to the configured API service.
-
-History import and export in Settings use ZIP archives. After confirmation and successful validation, importing replaces all local conversations and attachments. Exports include conversations and locally available original images, but exclude API keys, settings, and original non-image attachments. See the [history import/export documentation (Chinese)](src/services/chat/history/README.md) for the archive format and preservation details.
-
-Settings → Data → Delete all chats clears all local conversations, original attachments, and unsent drafts after confirmation. It stops ongoing replies and returns to a new chat. Your API key and settings are preserved; files already uploaded to the API service are not deleted.
-
-## Development
-
-| Command       | Description                  |
-| ------------- | ---------------------------- |
-| `pnpm dev`    | Start the development server |
-| `pnpm build`  | Build into `dist/`           |
-| `pnpm type`   | Run TypeScript type checks   |
-| `pnpm lint`   | Lint with oxlint             |
-| `pnpm format` | Format with oxfmt            |
-
-[rspack.config.ts](rspack.config.ts) uses `https://api.deepseek.com` by default. Use `createConfig({ apiOrigin, devServer })` to customize the API origin and development server proxy.
-
-Chat uses `deepseek-flash` by default through Anthropic-compatible Messages / Files APIs. Speech features use ASR / TTS endpoints. Requests include extensions for search, link reading, titles, and `latest_reminder`, so the configured service must support the corresponding capabilities. Supported attachment formats are determined by server-side validation.
-
-```text
-src/
-  app/                 Application layout, themes, and global styles
-  components/          Chat, settings, Markdown, and other UI components
-  i18n/                English and Chinese translations
-  services/
-    api/               API requests, SSE, and protocol types
-    chat/              Conversations, message branches, storage, and history import/export
-    markdown/          Markdown parsing, syntax highlighting, and diagrams
-    speech/            Audio recording and read-aloud playback
-  utils/               Shared utilities
-```
+This is not the official release; features and documentation follow upstream. Official demo and docs: <https://deepseek-ai.github.io/chat-demo/> .
 
 ## License
 
-[MIT](LICENSE). The build copies the license to `dist/LICENSE`; include it when distributing the app. Third-party dependencies are subject to their own licenses.
+MIT, inherited from upstream. See [LICENSE](LICENSE).
